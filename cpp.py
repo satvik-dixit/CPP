@@ -1,12 +1,6 @@
 import numpy as np
 import scipy.signal
-import matplotlib.pyplot as plt
-from scipy.signal import find_peaks
 from sklearn.linear_model import LinearRegression
-import scipy.io.wavfile
-import io
-from IPython.display import Image
-
 
 
 # function for computing cepstral peak prominence
