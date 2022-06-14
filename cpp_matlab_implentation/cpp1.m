@@ -36,7 +36,7 @@
 % TODO: Use vectorised regression line fitting 
 %       Add band-pass filtering variant
 
-function CPP = cpp( x, fs, smoothOpt, normOpt )
+function CPP = cpp( x, fs, smoothOpt, normOpt, dBScaleOpt)
 
 if nargin < 3
     smoothOpt = 0;
@@ -51,47 +51,35 @@ end
 %% Settings
 filterType = 'highpass';
 HPfilt_b = [1 - 0.97];
-frameLength = round( 0.04 * fs );
-
-if smoothOpt
-   frameShift = round( 0.002 * fs);
-   timeSmoothLen = 10; 
-   quefSmoothLen = 10; 
-else 
-   frameShift = round( 0.01 * fs);
-end
-
-halfLen = round( frameLength / 2 );
 xLen = length( x );
-frameLen = halfLen * 2 + 1;
+frameLength = xLen;
+
+
+frameLen = frameLength;
 NFFT = 2 ^ ( ceil ( log (frameLen) / log(2) ) );
 quef = linspace( 0, frameLen / 1000, NFFT );
-F0lim = [ 500, 50 ]; % Note that this differs from Hillenbrands
-                     % settings of 60-300 Hz, to allow for a
-                     % fuller range of potential F0 values
+F0lim = [ 333.3, 60 ]; 
 quefLim = round(fs ./ F0lim);
 quefSeq = ( quefLim(1):quefLim(2) )';
 
-time_samples = frameLength+1:frameShift:xLen-frameLength;
+time_samples = [fix(xLen/2)];
 N = length(time_samples);
-frameStart = time_samples-halfLen;
-frameStop = time_samples+halfLen;
 
 %% Apply filtering if requested
-if strcmp( filterType, 'highpass' )
-   x = filter( HPfilt_b, 1, x );
-end
+%%if strcmp( filterType, 'highpass' )
+%%   x = filter( HPfilt_b, 1, x );
+%%end
 
 %% Create frame matrix
 frameMat = zeros( NFFT, N );
 for n=1:N
-   frameMat(1:frameLen,n) = x( frameStart(n):frameStop(n) );
+   frameMat(1:frameLen,n) = x;
 end
 
 %% Apply Hann window function
-win = hanning( frameLen);
+win = sin(pi*[1:frameLen]/frameLen);
 winMat = repmat( win,1,N );
-frameMat = frameMat(1:frameLen,:) .* winMat;
+%%frameMat = frameMat(1:frameLen,:) .* winMat;
 
 %% Compute magnitude spectrum
 SpecMat = abs( fft( frameMat ) );
@@ -127,8 +115,7 @@ if strcmp( normOpt, 'line' )
 elseif strcmp( normOpt, 'nonorm' )==0
    CepsNorm = mean( CepsLim, 1 );
 end
- 
+
 CPP = CepsMax - CepsNorm;
 CPP = [CPP(:) time_samples(:)];
-
 
