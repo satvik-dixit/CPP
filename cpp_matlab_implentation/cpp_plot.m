@@ -23,9 +23,9 @@ frameMat = zeros( NFFT,1);
 frameMat(1:frameLen,1) = x;
 
 %% Apply Hann window function
-%%win = sin(pi*[1:frameLen]/frameLen);
-%%winMat = repmat( win,1,1 );
-%%frameMat = frameMat(1:frameLen,:) .* winMat;
+win = hanning(frameLen);
+winMat = repmat( win,1,1 );
+frameMat = frameMat(1:frameLen,:) .* winMat;
 
 %% Compute magnitude spectrum
 SpecMat = abs( fft( frameMat ) );
@@ -48,7 +48,10 @@ elseif strcmp( normOpt, 'nonorm' )==0
    CepsNorm = mean( CepsLim, 1 );
 end
 
-plot(quef(quefSeq), CepsLim, quef(quefSeq), polyval(p, quefSeq), 'o-', 'MarkerIndices', maxIdx)
+plot(quef(quefSeq), CepsLim, quef(quefSeq), polyval(p, quefSeq), 'o-', 'MarkerIndices', maxIdx, 'LineWidth',2.0)
+title('Cepstrum')
+xlabel('quefrency (s)') 
+ylabel('log magnitude (dB)') 
 
 CPP = CepsMax - CepsNorm;
 

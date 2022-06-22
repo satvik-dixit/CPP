@@ -51,35 +51,49 @@ end
 %% Settings
 filterType = 'highpass';
 HPfilt_b = [1 - 0.97];
+frameLength = round( 0.04 * fs );
+
+if smoothOpt
+   frameShift = round( 0.002 * fs);
+   timeSmoothLen = 10; 
+   quefSmoothLen = 10; 
+else 
+   frameShift = round( 0.01 * fs);
+end
+
+halfLen = round( frameLength / 2 );
 xLen = length( x );
-frameLength = xLen;
-
-
-frameLen = frameLength;
+frameLen = halfLen * 2 + 1;
 NFFT = 2 ^ ( ceil ( log (frameLen) / log(2) ) );
 quef = linspace( 0, frameLen / 1000, NFFT );
-F0lim = [ 333.3, 60 ]; 
+F0lim = [ 333.3, 60 ]; % Note that this differs from Hillenbrands
+                     % settings of 60-300 Hz, to allow for a
+                     % fuller range of potential F0 values
 quefLim = round(fs ./ F0lim);
 quefSeq = ( quefLim(1):quefLim(2) )';
 
-time_samples = [fix(xLen/2)];
+
+time_samples = frameLength+1:frameShift:xLen-frameLength;
 N = length(time_samples);
+frameStart = time_samples-halfLen;
+frameStop = time_samples+halfLen;
 
 %% Apply filtering if requested
-%%if strcmp( filterType, 'highpass' )
-%%   x = filter( HPfilt_b, 1, x );
-%%end
+if strcmp( filterType, 'highpass' )
+   x = filter( HPfilt_b, 1, x );
+end
 
 %% Create frame matrix
 frameMat = zeros( NFFT, N );
 for n=1:N
-   frameMat(1:frameLen,n) = x;
+   frameMat(1:frameLen,n) = x( frameStart(n):frameStop(n) );
 end
 
+
 %% Apply Hann window function
-win = sin(pi*[1:frameLen]/frameLen);
+win = hanning( frameLen);
 winMat = repmat( win,1,N );
-%%frameMat = frameMat(1:frameLen,:) .* winMat;
+frameMat = frameMat(1:frameLen,:) .* winMat;
 
 %% Compute magnitude spectrum
 SpecMat = abs( fft( frameMat ) );
@@ -115,7 +129,9 @@ if strcmp( normOpt, 'line' )
 elseif strcmp( normOpt, 'nonorm' )==0
    CepsNorm = mean( CepsLim, 1 );
 end
-
+ 
 CPP = CepsMax - CepsNorm;
 CPP = [CPP(:) time_samples(:)];
+
+
 
